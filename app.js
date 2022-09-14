@@ -112,19 +112,23 @@ function streamConnect(retryAttempt) {
     .on('data', async (data) => {
       try {
         console.log('hello');
-        const json = JSON.parse(data);
-        console.log(json);
-        let url;
-        if (json.data.text.includes('Grab this')) {
-          url = await openWebsite(json.data.conversation_id);
-          console.log(url);
+        let json;
+        if (data) {
+          json = JSON.parse(data);
+          console.log(json);
+          let url;
+          if (json.data.text.includes('Grab this')) {
+            url = await openWebsite(json.data.conversation_id);
+            console.log(url);
+          }
+          if (url !== undefined)
+            await main('Here is the pdf ' + url, json.data.id);
         }
-        if (url !== undefined)
-          await main('Here is the pdf ' + url, json.data.id);
         // A successful connection resets retry count.
         retryAttempt = 0;
       } catch (e) {
         console.log(e);
+        console.log(data.detail);
         if (
           data.detail ===
           'This stream is currently at the maximum allowed connection limit.'
@@ -166,7 +170,25 @@ async function main(text, inreplyId) {
     console.log(e);
   }
 }
-(async () => {
+// (async () => {
+//   let currentRules;
+//   try {
+//     currentRules = await getAllRules();
+//     await deleteAllRules(currentRules);
+//     await setRules();
+//   } catch (e) {
+//     console.error(e);
+//     process.exit(1);
+//   }
+//   streamConnect(0);
+// })();
+app.get('/', (req, res) => {
+  res.send('This is stream listener twitter bot');
+});
+
+app.listen(PORT, async () => {
+  console.log(`The application is listening on port ${PORT}!`);
+  // (async () => {
   let currentRules;
   try {
     currentRules = await getAllRules();
@@ -177,11 +199,5 @@ async function main(text, inreplyId) {
     process.exit(1);
   }
   streamConnect(0);
-})();
-app.get('/', (req, res) => {
-  res.send('This is stream listener twitter bot');
-});
-
-app.listen(PORT, () => {
-  console.log(`The application is listening on port ${PORT}!`);
+  // })();
 });
