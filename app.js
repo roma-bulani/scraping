@@ -166,19 +166,19 @@ async function main(text, inreplyId) {
     console.log(e);
   }
 }
+(async () => {
+  let currentRules;
+  try {
+    currentRules = await getAllRules();
+    await deleteAllRules(currentRules);
+    await setRules();
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
+  streamConnect(0);
+})();
 app.get('/', (req, res) => {
-  (async () => {
-    let currentRules;
-    try {
-      currentRules = await getAllRules();
-      await deleteAllRules(currentRules);
-      await setRules();
-    } catch (e) {
-      console.error(e);
-      process.exit(1);
-    }
-    streamConnect(0);
-  })();
   res.send('This is stream listener twitter bot');
 });
 
