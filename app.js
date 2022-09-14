@@ -1,8 +1,15 @@
 import needle from 'needle';
 import * as dotenv from 'dotenv';
 import { TwitterApi } from 'twitter-api-v2';
+import express from 'express';
+import bodyParser from 'body-parser';
+import cors from 'cors';
 dotenv.config();
+const app = express();
+app.use(bodyParser.json());
+app.use(cors());
 const token = process.env['BEARER_TOKEN'];
+const PORT = process.env.PORT || 4000;
 import puppeteer from 'puppeteer';
 const rulesURL = 'https://api.twitter.com/2/tweets/search/stream/rules';
 const streamURL =
@@ -162,16 +169,22 @@ async function main(text, inreplyId) {
     console.log(e);
   }
 }
+app.get('/', (req, res) => {
+  (async () => {
+    let currentRules;
+    try {
+      currentRules = await getAllRules();
+      await deleteAllRules(currentRules);
+      await setRules();
+    } catch (e) {
+      console.error(e);
+      process.exit(1);
+    }
+    streamConnect(0);
+  })();
+  res.send('This is stream listener twitter bot');
+});
 
-(async () => {
-  let currentRules;
-  try {
-    currentRules = await getAllRules();
-    await deleteAllRules(currentRules);
-    await setRules();
-  } catch (e) {
-    console.error(e);
-    process.exit(1);
-  }
-  streamConnect(0);
-})();
+app.listen(PORT, () => {
+  console.log(`The application is listening on port ${PORT}!`);
+});
