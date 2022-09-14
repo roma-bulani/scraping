@@ -121,14 +121,16 @@ function streamConnect(retryAttempt) {
             url = await openWebsite(json.data.conversation_id);
             console.log(url);
           }
-          if (url !== undefined)
-            await main('Here is the pdf ' + url, json.data.id);
+          if (url !== undefined) {
+            console.log('url not undefined');
+            main('Here is the pdf ' + url, json.data.id);
+          }
         }
         // A successful connection resets retry count.
         retryAttempt = 0;
       } catch (e) {
         console.log(e);
-        console.log(data.detail);
+        console.log(data);
         if (
           data.detail ===
           'This stream is currently at the maximum allowed connection limit.'
@@ -157,6 +159,7 @@ function streamConnect(retryAttempt) {
 }
 
 async function main(text, inreplyId) {
+  console.log(text, inreplyId, 'inside main');
   try {
     const client = new TwitterApi({
       appKey: process.env['APP_KEY'],
@@ -165,30 +168,13 @@ async function main(text, inreplyId) {
       accessSecret: process.env['ACCESS_SECRET']
     });
     const rwClient = client.readWrite;
-    await rwClient.v1.tweet(text, { in_reply_to_status_id: inreplyId });
+    const res = await rwClient.v1.reply(text, inreplyId);
+    console.log(res);
   } catch (e) {
     console.log(e);
   }
 }
-// (async () => {
-//   let currentRules;
-//   try {
-//     currentRules = await getAllRules();
-//     await deleteAllRules(currentRules);
-//     await setRules();
-//   } catch (e) {
-//     console.error(e);
-//     process.exit(1);
-//   }
-//   streamConnect(0);
-// })();
-app.get('/', (req, res) => {
-  res.send('This is stream listener twitter bot');
-});
-
-app.listen(PORT, async () => {
-  console.log(`The application is listening on port ${PORT}!`);
-  // (async () => {
+(async () => {
   let currentRules;
   try {
     currentRules = await getAllRules();
@@ -199,5 +185,11 @@ app.listen(PORT, async () => {
     process.exit(1);
   }
   streamConnect(0);
-  // })();
+})();
+app.get('/', (req, res) => {
+  res.send('This is stream listener twitter bot');
+});
+
+app.listen(PORT, () => {
+  console.log(`The application is listening on port ${PORT}!`);
 });
