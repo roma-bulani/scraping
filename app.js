@@ -111,16 +111,20 @@ function streamConnect(retryAttempt) {
   stream
     .on('data', async (data) => {
       try {
+        console.log('hello');
         const json = JSON.parse(data);
+        console.log(json);
         let url;
         if (json.data.text.includes('Grab this')) {
           url = await openWebsite(json.data.conversation_id);
           console.log(url);
         }
-        await main('Here is the pdf ' + url, json.data.id);
+        if (url !== undefined)
+          await main('Here is the pdf ' + url, json.data.id);
         // A successful connection resets retry count.
         retryAttempt = 0;
       } catch (e) {
+        console.log(e);
         if (
           data.detail ===
           'This stream is currently at the maximum allowed connection limit.'
@@ -148,28 +152,18 @@ function streamConnect(retryAttempt) {
 }
 
 async function main(text, inreplyId) {
-  if (text)
-    try {
-      const client = new TwitterApi({
-        appKey: process.env['APP_KEY'],
-        appSecret: process.env['APP_SECRET'],
-        accessToken: process.env['ACCESS_TOKEN'],
-        accessSecret: process.env['ACCESS_SECRET']
-      });
-
-      const rwClient = client.readWrite;
-
-      const tweet = async () => {
-        try {
-          await rwClient.v1.reply(text, inreplyId);
-        } catch (error) {
-          console.error(error);
-        }
-      };
-      tweet();
-    } catch (e) {
-      console.log(e);
-    }
+  try {
+    const client = new TwitterApi({
+      appKey: process.env['APP_KEY'],
+      appSecret: process.env['APP_SECRET'],
+      accessToken: process.env['ACCESS_TOKEN'],
+      accessSecret: process.env['ACCESS_SECRET']
+    });
+    const rwClient = client.readWrite;
+    await rwClient.v1.tweet(text, { in_reply_to_status_id: inreplyId });
+  } catch (e) {
+    console.log(e);
+  }
 }
 app.get('/', (req, res) => {
   (async () => {
