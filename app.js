@@ -136,6 +136,7 @@ function streamConnect(retryAttempt) {
       }
     })
     .on('err', (error) => {
+      console.log(err, 'Error!!');
       if (error.code !== 'ECONNRESET') {
         process.exit(1);
       } else {
