@@ -11,6 +11,11 @@ app.use(cors());
 const token = process.env['BEARER_TOKEN'];
 const PORT = process.env.PORT || 4000;
 import puppeteer from 'puppeteer';
+import {
+  getFirstTweet,
+  getTextWithoutMediaURL,
+  getTweetsInThread
+} from './twitterService.js';
 const rulesURL = 'https://api.twitter.com/2/tweets/search/stream/rules';
 const streamURL =
   'https://api.twitter.com/2/tweets/search/stream?tweet.fields=attachments,author_id,conversation_id,entities,id,in_reply_to_user_id,referenced_tweets,reply_settings,source,text,withheld&expansions=in_reply_to_user_id,referenced_tweets.id,referenced_tweets.id.author_id';
@@ -111,11 +116,11 @@ function streamConnect(retryAttempt) {
   stream
     .on('data', async (data) => {
       try {
-        console.log('hello');
+        console.log('Server is running');
         let json;
         if (data) {
           json = JSON.parse(data);
-          console.log(json);
+          // console.log(json);
           let url;
           if (json.data.text.includes('Grab this')) {
             url = await openWebsite(json.data.conversation_id);
@@ -129,8 +134,6 @@ function streamConnect(retryAttempt) {
         // A successful connection resets retry count.
         retryAttempt = 0;
       } catch (e) {
-        console.log(e);
-        console.log(data);
         if (
           data.detail ===
           'This stream is currently at the maximum allowed connection limit.'
@@ -189,7 +192,30 @@ async function main(text, inreplyId) {
 app.get('/', (req, res) => {
   res.send('This is stream listener twitter bot');
 });
-
+app.get('/conversation/:id', async (req, res) => {
+  try {
+    const firstTweet = await getFirstTweet(req.params.id);
+    const tweetsInThread = await getTweetsInThread(
+      req.params.id,
+      firstTweet.username
+    );
+    const allMedia = tweetsInThread?.includes?.media;
+    const threadTweets = [...tweetsInThread?.data].reverse().map((tweet) => ({
+      text: getTextWithoutMediaURL(tweet.text),
+      media:
+        tweet?.attachments?.media_keys.map(
+          (key) => allMedia?.filter((media) => media.media_key === key)[0]
+        ) || [],
+      id: tweet.id
+    }));
+    const allTweets = [firstTweet, ...threadTweets];
+    res.send(allTweets);
+  } catch (error) {
+    return res
+      .status(500)
+      .send({ msg: 'Could not fetch conversation' + error });
+  }
+});
 app.listen(PORT, () => {
   console.log(`The application is listening on port ${PORT}!`);
 });
